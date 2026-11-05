@@ -258,7 +258,7 @@ function render(): void {
 
 let bubbleCount = 0;
 
-function addBubble(speaker: 'user' | 'persona', text: string, continues?: boolean, id?: string): void {
+function addBubble(speaker: 'user' | 'persona', text: string, continues?: boolean, id?: string, spoken?: boolean): void {
   const last = conversation.lastElementChild;
   if (continues && last?.classList.contains('persona')) {
     last.textContent = `${last.textContent} ${text}`;
@@ -274,6 +274,7 @@ function addBubble(speaker: 'user' | 'persona', text: string, continues?: boolea
     const wrapper = document.createElement('div');
     wrapper.className = 'said';
     wrapper.id = id ?? `said-${++bubbleCount}`;
+    if (spoken) wrapper.dataset.spoken = 'true';
     const ask = document.createElement('button');
     ask.className = 'ask-feedback';
     ask.textContent = 'How could I say that better?';
@@ -314,6 +315,14 @@ function showFeedback(id: string, text: string, segments?: { text: string; chang
     if (reason) note.append(document.createElement('br'), reason);
   } else {
     note.textContent = text;
+    // Speech recognition writes what you probably meant, which can quietly smooth out a mistake.
+    if (wrapper.dataset.spoken) {
+      const caveat = document.createElement('span');
+      caveat.className = 'caveat';
+      caveat.textContent =
+        'This is about the words above, as I heard them. Speech recognition sometimes smooths out small mistakes, so if they aren’t exactly what you said, type your sentence below to check it.';
+      note.append(document.createElement('br'), caveat);
+    }
   }
   wrapper.append(note);
 }
@@ -445,7 +454,7 @@ desktop.on((event: ToWindow) => {
       render();
       break;
     case 'said':
-      addBubble(event.speaker, event.text, event.continues, event.id);
+      addBubble(event.speaker, event.text, event.continues, event.id, event.spoken);
       break;
     case 'feedback':
       showFeedback(event.id, event.text, event.segments, event.reason);

@@ -183,7 +183,7 @@ export class Session {
         return;
       }
       this.#history.push({ speaker: 'user', text: heard });
-      this.send({ type: 'said', speaker: 'user', text: heard, id: `said-${Date.now()}` });
+      this.send({ type: 'said', speaker: 'user', text: heard, id: `said-${Date.now()}`, spoken: typed === undefined });
       await this.#speakReply();
     } catch (error) {
       this.log({ event: 'error', message: String(error) });

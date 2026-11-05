@@ -49,3 +49,4 @@ main[hidden], footer[hidden] { display: none; }
 .feedback { font-size: .9rem; color: var(--muted); background: var(--panel); border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; }
 #replay { min-height: 48px; }
 .feedback mark { background: transparent; color: var(--fg); font-weight: 600; text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.feedback .caveat { display: inline-block; margin-top: 4px; font-size: .8rem; }

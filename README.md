@@ -29,6 +29,8 @@ Get the installer from [Releases](../../releases).
 
 **First run:** Windows may warn that the app is from an unknown publisher, because it isn't code-signed yet. Click **More info**, then **Run anyway**. Choose a partner, and the app picks the right models for your computer, asks before downloading about 7 GB once, and works offline after that. Meeting the other partner later downloads their voice, about 0.3 GB.
 
+**Feedback is about the words as speech recognition heard them.** Speech recognition tends to write what you probably meant, so it can quietly smooth out a mistake before feedback sees it. The app says so when it calls something you *said* natural. To check a sentence exactly, type it.
+
 **Feedback** needs the larger model, which most computers with a dedicated graphics card get. On the smaller model it suggested fixes to correct sentences too often, so the button doesn't appear there.
 
 **Privacy:** nothing you say leaves your computer, and there's no account and no tracking. The partner is an AI, not a real person, and says so if you ask.

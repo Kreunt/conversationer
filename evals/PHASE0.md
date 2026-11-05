@@ -231,6 +231,10 @@ Weak spots:
 - For both partners, the words that changed are highlighted by code (`markChanges`, a word-level comparison), so the change is visible without relying on the model's explanation.
 - A correction can still contain its own small slip: one wrote "heute morgen" for "heute Morgen".
 
+**Known gap: feedback judges the transcript, not the voice.** Whisper tends to write what the speaker probably meant, so it can remove the very mistake feedback should catch, giving false reassurance. The feedback evals only used typed sentences, so how often this happens with real learner speech is unknown.
+
+For now (0.3.1), when the button calls something *spoken* natural, it says the check is about the words as heard and suggests typing the sentence, since typed turns skip Whisper. Measuring this needs recordings of real learners making real mistakes.
+
 **Turn-taking changed at the user's request:** after the partner speaks, nothing is recorded until the learner presses **Start speaking**, and **Hear again** replays the reply. Recording stops at **I'm done**, after a test showed sound afterwards could cancel the reply and repeat the turn.
 
 **Windows tests:**

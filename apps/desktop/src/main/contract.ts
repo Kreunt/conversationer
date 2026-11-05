@@ -39,7 +39,7 @@ export type ToWindow =
   | { type: 'setup_failed'; message: string; detail: string }
   | { type: 'failed'; message: string }
   | { type: 'state'; state: TurnState }
-  | { type: 'said'; speaker: 'user' | 'persona'; text: string; continues?: boolean; id?: string }
+  | { type: 'said'; speaker: 'user' | 'persona'; text: string; continues?: boolean; id?: string; spoken?: boolean }
   | { type: 'audio'; wav: ArrayBuffer; text: string }
   | { type: 'play' }
   | { type: 'reply_complete' }
