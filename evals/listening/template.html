@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Listening Test</title>
+<style>
+  :root { --bg: #faf8f4; --fg: #26231f; --muted: #6d675e; --line: #ddd7cc; --accent: #9a4a1c; --on-accent: #fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #1d1b18; --fg: #efeae1; --muted: #a79f92; --line: #3b3731; --accent: #e59a66; --on-accent: #1d1b18; } }
+  * { box-sizing: border-box; }
+  body { margin: 0 auto; max-width: 760px; padding: 24px 16px 64px; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
+  h1 { font-size: 1.5rem; margin: 0 0 8px; }
+  p { color: var(--muted); margin: 0 0 16px; }
+  .voice { border-top: 1px solid var(--line); padding: 16px 0; }
+  .voice h2 { font-size: 1.1rem; margin: 0 0 8px; }
+  .clips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  button { font: inherit; padding: 8px 12px; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--fg); cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.selected, button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+  .row span { min-width: 150px; color: var(--muted); font-size: .9rem; }
+  .bar { position: sticky; top: 0; background: var(--bg); padding: 8px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  #results { margin-top: 24px; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: .85rem; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<h1>__TITLE__</h1>
+<p>__INTRO__</p>
+<div class="bar">
+  <label>Sentence: <select id="sentence"></select></label>
+  <button class="primary" id="reveal">Show results</button>
+</div>
+<div id="voices"></div>
+<div id="results"></div>
+<script>
+const SENTENCES = __SENTENCES__;
+const SAMPLES = __SAMPLES__;
+const LABELS = __LABELS__;
+const CLIPS = __CLIPS__;
+const CRITERIA = __CRITERIA__;
+const KEY = '__KEY__';
+let ratings = {};
+try { ratings = JSON.parse(localStorage.getItem(KEY)) || {}; } catch {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(ratings)); } catch {} };
+
+const sentenceSelect = document.getElementById('sentence');
+SENTENCES.forEach((text, i) => sentenceSelect.add(new Option(text, i)));
+
+const player = new Audio();
+function play(label, speed) {
+  const sample = SAMPLES.find((s) => s.label === label && s.speed === speed && s.sentence === Number(sentenceSelect.value));
+  player.src = sample.file;
+  player.play();
+}
+
+function ratingRow(label, kind, title) {
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML = `<span>${title}</span>`;
+  for (let score = 1; score <= 5; score++) {
+    const button = document.createElement('button');
+    button.textContent = score;
+    const refresh = () => button.classList.toggle('selected', ratings[label]?.[kind] === score);
+    button.onclick = () => {
+      ratings[label] = { ...ratings[label], [kind]: score };
+      save();
+      row.querySelectorAll('button').forEach((b) => b.classList.toggle('selected', b === button));
+    };
+    refresh();
+    row.append(button);
+  }
+  return row;
+}
+
+const container = document.getElementById('voices');
+for (const label of Object.keys(LABELS).sort()) {
+  const voice = document.createElement('section');
+  voice.className = 'voice';
+  voice.innerHTML = `<h2>${label}</h2>`;
+  const clips = document.createElement('div');
+  clips.className = 'clips';
+  for (const [title, speed] of CLIPS) {
+    const button = document.createElement('button');
+    button.textContent = title;
+    button.onclick = () => play(label, speed);
+    clips.append(button);
+  }
+  voice.append(clips, ...CRITERIA.map(([kind, title]) => ratingRow(label, kind, title)));
+  container.append(voice);
+}
+
+document.getElementById('reveal').onclick = () => {
+  const lines = Object.entries(ratings)
+    .map(([label, r]) => ({ voice: LABELS[label], r, total: CRITERIA.reduce((sum, [kind]) => sum + (r[kind] || 0), 0) }))
+    .sort((a, b) => b.total - a.total)
+    .map(({ voice, r, total }) => `${total}/${CRITERIA.length * 5}  ${voice}  ${CRITERIA.map(([kind]) => `${kind}=${r[kind] ?? '-'}`).join(' ')}`);
+  document.getElementById('results').textContent = lines.length ? lines.join('\n') : 'Rate some voices first.';
+};
+</script>
+</body>
+</html>

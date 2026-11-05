@@ -1,0 +1,22 @@
+Conversationer is free software under the GNU GPL v3 (see LICENSE.txt). It uses the
+following work by others, under their own licences.
+
+Included with the app
+- Electron and Chromium: MIT and others. See LICENSE.electron.txt and LICENSES.chromium.html.
+- llama.cpp (ggml-org): MIT. https://github.com/ggml-org/llama.cpp
+- whisper.cpp (ggml-org): MIT. https://github.com/ggml-org/whisper.cpp
+- Pocket TTS (Kyutai): MIT. https://github.com/kyutai-labs/pocket-tts
+
+Downloaded on first run, as this computer needs them
+- Gemma 4 E4B and E2B (Google): Apache 2.0.
+  https://huggingface.co/google/gemma-4-E4B-it-qat-q4_0-gguf
+  https://huggingface.co/google/gemma-4-E2B-it-qat-q4_0-gguf
+- Whisper models (OpenAI, converted by whisper.cpp): MIT.
+  https://huggingface.co/ggerganov/whisper.cpp
+- Silero VAD: MIT. https://huggingface.co/ggml-org/whisper-vad
+- Pocket TTS German model and the "juergen" voice, by Kyutai: model weights are
+  CC BY 4.0. https://huggingface.co/kyutai/pocket-tts-without-voice-cloning
+  Kyutai prohibits voice impersonation without consent and presenting generated audio
+  as real recordings.
+- On NVIDIA graphics cards only: the whisper.cpp CUDA build, which includes NVIDIA CUDA
+  libraries under NVIDIA's own terms.

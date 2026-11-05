@@ -1,0 +1,29 @@
+{
+  "name": "conversationer",
+  "version": "0.0.0",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "eval": "tsx evals/run.ts",
+    "chat": "tsx evals/chat.ts",
+    "fetch-sidecars": "tsx scripts/fetch-sidecars.ts",
+    "build:desktop": "tsx scripts/build-desktop.ts",
+    "windows": "tsx scripts/run-on-windows.ts",
+    "package": "tsx scripts/package-windows.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "electron": "45.2.1",
+    "esbuild": "0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

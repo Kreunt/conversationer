@@ -1,0 +1,54 @@
+{
+  "llama": {
+    "license": "MIT",
+    "version": "v0.8.0 (build b11960)",
+    "assets": {
+      "linux": {
+        "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11960/llama-b11960-bin-ubuntu-vulkan-x64.tar.gz",
+        "sha256": "164199e978304bb32a8a6c24b8efa015528ddf286821596eab676c90b375feac"
+      },
+      "win32": {
+        "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11960/llama-b11960-bin-win-vulkan-x64.zip",
+        "sha256": "bac6914b5e83523eb008c6789eaa12669f93fbc196c3b9e8237b6672323b33e9"
+      }
+    }
+  },
+  "whisper": {
+    "license": "MIT",
+    "version": "v1.9.5 (build b5454)",
+    "assets": {
+      "linux": {
+        "url": "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-ubuntu-x64.tar.gz",
+        "sha256": "a72becf15d7917f990f6313867a52638b82b7f9ef237fb0c980dac56a135781c"
+      },
+      "win32": {
+        "url": "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-x64.zip",
+        "sha256": "6ba69e3482d7826214f90a6a9c84ca07782aec1e1d0c6a7c30c994fd5d816ccb"
+      }
+    }
+  },
+  "pocket-tts": {
+    "license": "MIT",
+    "version": "v4.0.1 (binary 3.3.0)",
+    "assets": {
+      "linux": {
+        "url": "https://github.com/kyutai-labs/pocket-tts/releases/download/v4.0.1/pocket-tts-3.3.0-x86_64-unknown-linux-gnu.tar.gz",
+        "sha256": "9abff0aa138a804e44052952d8c3bdaae247fb267ca8f4b83fe178897d1a0559"
+      },
+      "win32": {
+        "url": "https://github.com/kyutai-labs/pocket-tts/releases/download/v4.0.1/pocket-tts-3.3.0-x86_64-pc-windows-msvc.zip",
+        "sha256": "98753041f2e65744b989776f87bccb93f1f574a08afe1890c5427ec94cd6309c"
+      }
+    }
+  },
+  "whisper-cuda": {
+    "license": "MIT",
+    "version": "v1.9.5 (build b5454)",
+    "assets": {
+      "win32": {
+        "url": "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-win-cuda-12.4.0-x64.zip",
+        "sha256": "afef0b881c500958921c3f5523b50e59ee2ec9b6f5cbd25b324c51ed308a957a"
+      }
+    }
+  }
+}

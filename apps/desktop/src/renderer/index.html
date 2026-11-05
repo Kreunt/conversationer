@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; media-src 'self' blob:; worker-src 'self' blob:">
+  <title>Conversationer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="who"><strong>Jonas</strong> <span>your AI conversation partner from Leipzig</span></div>
+    <label>My German
+      <select id="level">
+        <option value="A1">Beginner (A1)</option>
+        <option value="A2" selected>Basic (A2)</option>
+        <option value="B1">Intermediate (B1)</option>
+        <option value="B2">Good (B2)</option>
+      </select>
+    </label>
+  </header>
+  <section id="setup" hidden>
+    <h1>Before you meet Jonas</h1>
+    <p id="setup-text"></p>
+    <p class="setup-note">Jonas is an AI, not a real person. He runs entirely on this computer, so your conversations stay here, and after this download he works without the internet.</p>
+    <progress id="setup-progress" max="1" value="0" hidden></progress>
+    <p id="setup-status" role="status"></p>
+    <p id="setup-detail" class="setup-credit" hidden></p>
+    <button id="setup-accept">Start download</button>
+    <p class="setup-credit">Voice: Kyutai Pocket TTS (CC BY 4.0). Language model: Google Gemma 4 (Apache 2.0).</p>
+  </section>
+  <main id="conversation" aria-live="polite"></main>
+  <footer>
+    <p id="notice" role="status"></p>
+    <div class="turn">
+      <div id="ring" class="ring" aria-hidden="true"></div>
+      <p id="status">Getting ready…</p>
+      <button id="action" disabled>I’m done</button>
+    </div>
+    <form id="typing"><input id="text" autocomplete="off" lang="de" placeholder="Or type here…" aria-label="Type your turn"><button type="submit">Send</button></form>
+  </footer>
+  <script src="renderer.js"></script>
+</body>
+</html>
