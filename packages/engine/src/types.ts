@@ -103,5 +103,10 @@ export interface LanguagePack {
     /** The exact reply meaning nothing needs changing. */
     natural: string;
     request: (said: string) => string;
+    /**
+     * Whether to show the model's reason as well as the better version. German corrections were
+     * reliable but about 3 in 20 reasons were wrong, so German shows the correction alone.
+     */
+    showReason: boolean;
   };
 }

@@ -2,10 +2,10 @@
  * Checks "How could I say that better?" on sentences with and without real mistakes. Inventing a
  * mistake in a correct sentence is the failure that matters most, since these learners are anxious.
  *
- *   npx tsx evals/feedback.ts [--model gemma4:e4b-it-qat] [--runs 3]
+ *   npx tsx evals/feedback.ts [--partner tom|jonas] [--model gemma4:e4b-it-qat] [--runs 3]
  */
 import { parseArgs } from 'node:util';
-import { english } from '../languages/en/index.ts';
+import { partnerById } from '../languages/partners.ts';
 import { askForFeedback, openAiCompatibleChat } from '../packages/engine/src/index.ts';
 
 const { values } = parseArgs({
@@ -13,11 +13,15 @@ const { values } = parseArgs({
     model: { type: 'string', default: 'gemma4:e4b-it-qat' },
     base: { type: 'string', default: 'http://localhost:11434' },
     runs: { type: 'string', default: '3' },
+    partner: { type: 'string', default: 'tom' },
   },
 });
+const partner = partnerById(values.partner);
+if (!partner) throw new Error(`Unknown partner ${values.partner}`);
+const pack = partner.pack;
 
 // Correct, natural sentences a B2/C1 speaker might say, written as speech recognition returns them.
-const natural = [
+const englishNatural = [
   'I have been living in Hamburg for three years.',
   'To be honest I am not really into football.',
   'We ended up staying in because it was pouring down.',
@@ -41,7 +45,7 @@ const natural = [
 ];
 
 // Typical learner mistakes, each with what a good fix contains.
-const mistakes: [string, RegExp][] = [
+const englishMistakes: [string, RegExp][] = [
   ['I am living in Hamburg since three years.', /have been living|have lived/i],
   ['I am agree with you.', /\bI agree\b/i],
   ['It depends of the weather.', /depends on/i],
@@ -64,16 +68,65 @@ const mistakes: [string, RegExp][] = [
   ['I want that you come to my party.', /want you to come/i],
 ];
 
+// Correct German at A1–B2, including relaxed spoken forms that must not be "corrected".
+const germanNatural = [
+  'Ich bin heute früh aufgestanden.',
+  'Am Wochenende fahre ich zu meinen Eltern.',
+  'Ich habe gestern einen Film gesehen.',
+  'Meine Schwester wohnt in Hamburg.',
+  'Ich lerne seit drei Monaten Deutsch.',
+  'Ich mag keinen Regen.',
+  'Wir sind mit dem Zug gefahren.',
+  'Ich bin müde, weil ich viel gearbeitet habe.',
+  'Kannst du mir bitte helfen?',
+  'Ich freue mich auf das Wochenende.',
+  'Am Abend schaue ich manchmal fern.',
+  'Ich habe einen Bruder und eine Schwester.',
+  'Das Essen war wirklich lecker.',
+  'Ich weiß nicht, ob ich morgen Zeit habe.',
+  'Ich interessiere mich für Musik.',
+  'Gestern war ich beim Arzt.',
+  'Ich trinke lieber Tee als Kaffee.',
+  'Ich muss morgen früh arbeiten.',
+  'Ich hab heute keine Lust.',
+  'Was machst du so am Wochenende?',
+];
+
+const germanMistakes: [string, RegExp][] = [
+  ['Am Wochenende ich fahre zu meinen Eltern.', /Am Wochenende fahre ich/i],
+  ['Ich habe gegangen zum Arzt.', /bin zum Arzt gegangen|bin .*gegangen/i],
+  ['Ich hatte ein Problem mit meine Kollegin.', /mit meiner Kollegin/i],
+  ['Ich lerne Deutsch seit drei Monate.', /seit drei Monaten/i],
+  ['Ich bin müde, weil ich bin krank.', /weil ich krank bin/i],
+  ['Ich mag nicht Regen.', /keinen Regen/i],
+  ['Ich gehe jetzt zu Hause.', /nach Hause/i],
+  ['Gestern ich habe gearbeitet.', /Gestern habe ich gearbeitet/i],
+  ['Ich interessiere für Musik.', /interessiere mich/i],
+  ['Ich habe 30 Jahre alt.', /bin 30/i],
+  ['Wir sind gefahren nach Berlin.', /sind nach Berlin gefahren/i],
+  ['Ich kenne nicht ihn.', /kenne ihn nicht/i],
+  ['Ich habe ein Bruder.', /einen Bruder/i],
+  ['Ich möchte zu gehen.', /möchte gehen/i],
+  ['Der Film war sehr interessiert.', /interessant/i],
+  ['Ich freue mich auf dich zu sehen.', /darauf, dich zu sehen|freue mich, dich zu sehen|freue mich auf dich/i],
+  ['Das ist der Auto von meinem Vater.', /das Auto/i],
+  ['Ich wohne in eine kleine Wohnung.', /in einer kleinen Wohnung/i],
+  ['Kannst du mir die Buch geben?', /das Buch/i],
+  ['Er hat gesagt, dass er kommt morgen.', /dass er morgen kommt/i],
+];
+
+const natural = partner.id === 'tom' ? englishNatural : germanNatural;
+const mistakes = partner.id === 'tom' ? englishMistakes : germanMistakes;
 const chat = openAiCompatibleChat(values.base, values.model);
 const runs = Number(values.runs);
 let falseAlarms = 0;
 let caught = 0;
 let goodFixes = 0;
 
-console.log(`== Correct sentences: should be "${english.feedback?.natural}"`);
+console.log(`== Correct sentences: should be "${pack.feedback?.natural}"`);
 for (const sentence of natural) {
   for (let run = 0; run < runs; run++) {
-    const result = await askForFeedback(sentence, english, chat);
+    const result = await askForFeedback(sentence, pack, chat);
     if (!result.natural) {
       falseAlarms++;
       console.log(`  FALSE ALARM: ${sentence}\n    -> ${result.text}`);
@@ -84,7 +137,7 @@ for (const sentence of natural) {
 console.log('\n== Sentences with a real mistake');
 for (const [sentence, fix] of mistakes) {
   for (let run = 0; run < runs; run++) {
-    const result = await askForFeedback(sentence, english, chat);
+    const result = await askForFeedback(sentence, pack, chat);
     if (!result.natural) caught++;
     if (fix.test(result.text)) goodFixes++;
     if (run === 0) console.log(`  ${result.natural ? 'MISSED' : fix.test(result.text) ? 'fixed ' : 'other '}: ${sentence}\n    -> ${result.text}`);

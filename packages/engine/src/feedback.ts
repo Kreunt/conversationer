@@ -13,6 +13,10 @@ export interface Feedback {
   /** True when nothing needed changing. */
   natural: boolean;
   text: string;
+  /** The better version on its own, when there is one, for showing what changed. */
+  suggestion?: string;
+  /** Why, when the language's reasons have been found reliable enough to show. */
+  reason?: string;
 }
 
 /**
@@ -22,7 +26,7 @@ export interface Feedback {
 export async function askForFeedback(said: string, pack: LanguagePack, chat: ChatStream, signal?: AbortSignal): Promise<Feedback> {
   const coach = pack.feedback;
   if (!coach) throw new Error(`${pack.languageName} has no feedback`);
-  let text = '';
+  let streamed = '';
   for await (const chunk of chat(
     [
       { role: 'system', content: coach.system },
@@ -30,15 +34,19 @@ export async function askForFeedback(said: string, pack: LanguagePack, chat: Cha
     ],
     { temperature: 0.1, maxTokens: MAX_TOKENS, signal },
   )) {
-    text += chunk;
+    streamed += chunk;
   }
-  const reply = stripThinking(text).replace(/[*_#`]/g, '').trim();
+  const reply = stripThinking(streamed).replace(/[*_#`]/g, '').trim();
   if (!reply || reply.toLowerCase().startsWith(coach.natural.toLowerCase().replace(/\.$/, ''))) {
     return { natural: true, text: coach.natural };
   }
   // Speech recognition decides punctuation and capitals, so a "fix" that only changes those isn't one.
   const suggested = /["“]([^"”]+)["”]/.exec(reply)?.[1];
   if (suggested && comparable(suggested) === comparable(said)) return { natural: true, text: coach.natural };
+  if (suggested && !coach.showReason) return { natural: false, text: `“${suggested.trim()}”`, suggestion: suggested.trim() };
   const sentences = reply.match(/[^.!?]+[.!?]+["”’']?|[^.!?]+$/g) ?? [reply];
-  return { natural: false, text: sentences.slice(0, MAX_SENTENCES).map((s) => s.trim()).join(' ') };
+  const text = sentences.slice(0, MAX_SENTENCES).map((s) => s.trim()).join(' ');
+  if (!suggested) return { natural: false, text };
+  const reason = text.slice(text.indexOf(suggested) + suggested.length).replace(/^["”’'\s.]+/, '').trim();
+  return { natural: false, text, suggestion: suggested.trim(), reason: reason || undefined };
 }

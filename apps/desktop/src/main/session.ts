@@ -6,6 +6,7 @@ import {
   chooseDirection,
   cleanTranscript,
   generateTurn,
+  markChanges,
   openAiCompatibleChat,
   PATIENCE,
   personaTurn,
@@ -50,8 +51,9 @@ export class Session {
     if (!this.partner.pack.feedback || !canGiveFeedback(this.services.llmChoice.model)) return;
     try {
       const result = await askForFeedback(said, this.partner.pack, this.#chat);
-      this.log({ event: 'feedback', natural: result.natural });
-      this.send({ type: 'feedback', id, ...result });
+      this.log({ event: 'feedback', natural: result.natural, text: result.text });
+      const segments = result.suggestion ? markChanges(said, result.suggestion) : undefined;
+      this.send({ type: 'feedback', id, natural: result.natural, text: result.text, segments, reason: result.reason });
     } catch (error) {
       this.log({ event: 'error', message: String(error) });
       this.send({ type: 'feedback', id, natural: false, text: 'Sorry, I couldn’t check that just now. Please try again.' });

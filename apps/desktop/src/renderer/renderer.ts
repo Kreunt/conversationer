@@ -290,14 +290,31 @@ function addBubble(speaker: 'user' | 'persona', text: string, continues?: boolea
   conversation.scrollTop = conversation.scrollHeight;
 }
 
-function showFeedback(id: string, text: string): void {
+function showFeedback(id: string, text: string, segments?: { text: string; changed: boolean }[], reason?: string): void {
   const wrapper = document.getElementById(id);
   if (!wrapper) return;
   wrapper.querySelector('.ask-feedback')?.remove();
   const note = document.createElement('div');
   note.className = 'feedback';
-  note.lang = 'en';
-  note.textContent = text;
+  if (segments) {
+    // The better version, with what changed highlighted, so it's clear without an explanation.
+    const label = document.createElement('span');
+    label.textContent = 'Try: ';
+    const suggestion = document.createElement('span');
+    suggestion.lang = partner?.language === 'English' ? 'en' : 'de';
+    suggestion.append(
+      ...segments.map((segment) => {
+        if (!segment.changed) return document.createTextNode(segment.text);
+        const mark = document.createElement('mark');
+        mark.textContent = segment.text;
+        return mark;
+      }),
+    );
+    note.append(label, '“', suggestion, '”');
+    if (reason) note.append(document.createElement('br'), reason);
+  } else {
+    note.textContent = text;
+  }
   wrapper.append(note);
 }
 
@@ -431,7 +448,7 @@ desktop.on((event: ToWindow) => {
       addBubble(event.speaker, event.text, event.continues, event.id);
       break;
     case 'feedback':
-      showFeedback(event.id, event.text);
+      showFeedback(event.id, event.text, event.segments, event.reason);
       break;
     case 'audio':
       queue.push(event.wav);

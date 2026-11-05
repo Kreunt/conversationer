@@ -33,7 +33,7 @@ export type ToWindow =
   | { type: 'ready' }
   | { type: 'choose_partner'; partners: PartnerSummary[] }
   | { type: 'partner'; partner: PartnerSummary; level: CefrLevel }
-  | { type: 'feedback'; id: string; natural: boolean; text: string }
+  | { type: 'feedback'; id: string; natural: boolean; text: string; segments?: { text: string; changed: boolean }[]; reason?: string }
   | { type: 'setup_needed'; gigabytes: number }
   | { type: 'setup_progress'; doneGb: number; totalGb: number }
   | { type: 'setup_failed'; message: string; detail: string }

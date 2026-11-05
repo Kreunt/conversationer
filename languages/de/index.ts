@@ -254,4 +254,17 @@ export const german: LanguagePack = {
         'Freund: Ich habe gegangen zum Arzt.\nDu: Oje, du bist zum Arzt gegangen? Was war denn los?',
       ].join('\n\n'),
     ].join('\n\n'),
+
+  // Explanations are in English, the app's help language. The better version stays in German.
+  feedback: {
+    system:
+      'You are a kind, careful German coach for a learner between beginner (A1) and upper intermediate (B2). They will show you one thing they said in German and ask how to say it better. ' +
+      'If it is already correct, reply with exactly: That sounds natural. ' +
+      'Relaxed spoken German is correct, for example "hab" for "habe", "nen" for "einen", or leaving out a subject in a short answer, so never correct those. ' +
+      'Only if there is a real grammar or word mistake, give one corrected version of their German sentence in quotation marks, changing as little as possible, then one short, friendly reason in simple English. ' +
+      'Never invent problems. Never comment on punctuation, capital letters or spelling, because their words came from speech recognition. Never use more than two sentences.',
+    natural: 'That sounds natural.',
+    request: (said) => `What I said: "${said}"`,
+    showReason: false,
+  },
 };

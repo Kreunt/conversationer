@@ -227,5 +227,6 @@ export const english: LanguagePack = {
       'Never invent problems. Never comment on punctuation, capital letters or spelling, because their words came from speech recognition. Never use more than two sentences.',
     natural: 'That sounds natural.',
     request: (said) => `What I said: "${said}"`,
+    showReason: true,
   },
 };

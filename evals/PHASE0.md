@@ -222,7 +222,14 @@ Weak spots:
 | E4B | 3/60, all one comma; now ignored in code | 60/60 | 60/60 |
 | E2B | 25/60 | 60/60 | 56/60 |
 
-**Decision:** feedback only appears on E4B or better. For anxious learners, a correct sentence called wrong is the worst outcome. Jonas has no feedback, since German quality hasn't been checked.
+**Decision:** feedback only appears on E4B or better. For anxious learners, a correct sentence called wrong is the worst outcome.
+
+**German (0.3.0), E4B:** 20 correct sentences, including relaxed spoken forms ("Ich hab heute keine Lust"), and 20 typical mistakes, 3 runs each.
+- No false alarms (0/60), and 59/60 mistakes caught with the right correction.
+- **But about 3 in 20 explanations were wrong:** "weil ich bin krank" was fixed correctly, but "explained" as not repeating the verb. "der Auto" was rewritten into the genitive rather than fixing the article.
+- So Jonas shows only the corrected sentence, without a reason.
+- For both partners, the words that changed are highlighted by code (`markChanges`, a word-level comparison), so the change is visible without relying on the model's explanation.
+- A correction can still contain its own small slip: one wrote "heute morgen" for "heute Morgen".
 
 **Turn-taking changed at the user's request:** after the partner speaks, nothing is recorded until the learner presses **Start speaking**, and **Hear again** replays the reply. Recording stops at **I'm done**, after a test showed sound afterwards could cancel the reply and repeat the turn.
 

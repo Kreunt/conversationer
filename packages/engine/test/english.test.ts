@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { english, tom } from '../../../languages/en/index.ts';
 import { partners } from '../../../languages/partners.ts';
-import { askForFeedback, checkSentence, chooseDirection, cleanTranscript, generateTurn } from '../src/index.ts';
+import { askForFeedback, checkSentence, chooseDirection, cleanTranscript, generateTurn, markChanges } from '../src/index.ts';
 import type { ChatStream, Turn } from '../src/index.ts';
 
 const user = (text: string): Turn => ({ speaker: 'user', text });
@@ -145,8 +145,12 @@ describe('askForFeedback', () => {
       english,
       scripted('"I have been living here for three years." We use the present perfect for something still going on. Also, here is more. And more.'),
     );
-    expect(result.natural).toBe(false);
-    expect(result.text).toBe('"I have been living here for three years." We use the present perfect for something still going on.');
+    expect(result).toEqual({
+      natural: false,
+      text: '"I have been living here for three years." We use the present perfect for something still going on.',
+      suggestion: 'I have been living here for three years.',
+      reason: 'We use the present perfect for something still going on.',
+    });
   });
 
   it('ignores a "fix" that only changes punctuation, which speech recognition decides', async () => {
@@ -164,6 +168,51 @@ describe('askForFeedback', () => {
 
   it('is only offered where a pack provides it', async () => {
     const { german } = await import('../../../languages/de/index.ts');
-    await expect(askForFeedback('Hallo', german, scripted('x'))).rejects.toThrow();
+    await expect(askForFeedback('Hallo', { ...german, feedback: undefined }, scripted('x'))).rejects.toThrow();
+  });
+
+  it('works for German, ignoring capitals that speech recognition decides', async () => {
+    const { german } = await import('../../../languages/de/index.ts');
+    expect(await askForFeedback('ich habe einen bruder.', german, scripted('"Ich habe einen Bruder." Nouns take a capital letter.'))).toEqual({
+      natural: true,
+      text: 'That sounds natural.',
+    });
+    // German shows only the correction: its reasons were wrong too often to teach from.
+    const fixed = await askForFeedback('Ich bin müde, weil ich bin krank.', german, scripted('"Ich bin müde, weil ich krank bin." You don\'t need to repeat the verb.'));
+    expect(fixed).toEqual({ natural: false, text: '“Ich bin müde, weil ich krank bin.”', suggestion: 'Ich bin müde, weil ich krank bin.' });
+  });
+});
+
+describe('markChanges', () => {
+  const changed = (said: string, suggestion: string) =>
+    markChanges(said, suggestion)
+      .filter((s) => s.changed)
+      .map((s) => s.text);
+
+  it('marks a corrected word', () => {
+    expect(changed('Ich habe gegangen zum Arzt.', 'Ich bin zum Arzt gegangen.')).toEqual(['bin', 'gegangen.']);
+  });
+
+  it('marks one of two swapped words, which is what word-order mistakes look like', () => {
+    const marked = changed('Am Wochenende ich fahre zu meinen Eltern.', 'Am Wochenende fahre ich zu meinen Eltern.');
+    expect(marked).toHaveLength(1);
+    expect(['fahre', 'ich']).toContain(marked[0]);
+  });
+
+  it('marks an added word', () => {
+    expect(changed('Ich interessiere für Musik.', 'Ich interessiere mich für Musik.')).toEqual(['mich']);
+  });
+
+  it('ignores differences in capitals and punctuation, which speech recognition decides', () => {
+    expect(changed('ich habe einen bruder', 'Ich habe einen Bruder.')).toEqual([]);
+  });
+
+  it('keeps every word of the suggestion, in order, with its spacing', () => {
+    const suggestion = 'I have been living here for three years.';
+    expect(
+      markChanges('I am living here since three years.', suggestion)
+        .map((s) => s.text)
+        .join(''),
+    ).toBe(suggestion);
   });
 });

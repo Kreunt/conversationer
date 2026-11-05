@@ -119,7 +119,8 @@ if (values.autotest) {
   env['CONVERSATIONER_FAKE_MIC'] = windowsPath(microphone);
   env['CONVERSATIONER_AUTOTEST'] = String(AUTOTEST_TURNS);
   env['CONVERSATIONER_PARTNER'] = values.partner;
-  forwarded.push('CONVERSATIONER_FAKE_MIC', 'CONVERSATIONER_AUTOTEST', 'CONVERSATIONER_PARTNER');
+  env['CONVERSATIONER_TEST_FEEDBACK'] = '1';
+  forwarded.push('CONVERSATIONER_FAKE_MIC', 'CONVERSATIONER_AUTOTEST', 'CONVERSATIONER_PARTNER', 'CONVERSATIONER_TEST_FEEDBACK');
   if (values['switch-to']) {
     env['CONVERSATIONER_SWITCH_TO'] = values['switch-to'];
     forwarded.push('CONVERSATIONER_SWITCH_TO');

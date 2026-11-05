@@ -110,6 +110,10 @@ function runAutotest(active: Session): void {
   active.playbackFinished = () => {
     original();
     finished++;
+    // The first answer after the learner spoke: ask for feedback on what they said, as a person would.
+    if (finished === 2 && process.env['CONVERSATIONER_TEST_FEEDBACK']) {
+      void window?.webContents.executeJavaScript(`document.querySelector('.ask-feedback')?.click()`);
+    }
     if (finished <= autotestTurns) return;
     if (autotestSwitchTo && !autotestSwitched) {
       autotestSwitched = true;
