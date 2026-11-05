@@ -53,6 +53,14 @@ export function whisperChoices(devices: GpuDevice[], llm: LlmChoice): WhisperCho
   return [{ build: 'whisper-cuda', model: 'ggml-large-v3-turbo-q5_0.bin' }, cpu];
 }
 
+/**
+ * Whether a model's suggestions about someone's English can be trusted. On correct sentences E4B
+ * raised a false alarm 5% of the time, only about a comma; E2B did 42% of the time.
+ */
+export function canGiveFeedback(model: string): boolean {
+  return model !== 'gemma4-e2b-it-qat';
+}
+
 /** Parses the output of `llama-server --list-devices`. */
 export function parseDevices(output: string): GpuDevice[] {
   const devices: GpuDevice[] = [];

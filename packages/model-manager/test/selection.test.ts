@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { llmChoices, parseDevices, whisperChoices } from '../src/index.ts';
+import { canGiveFeedback, llmChoices, parseDevices, whisperChoices } from '../src/index.ts';
 
 // Real output from this project's test machine.
 const LAPTOP = `Available devices:
@@ -80,5 +80,12 @@ describe('whisperChoices', () => {
   it('uses the CPU without an NVIDIA card', () => {
     const amd = [{ id: 'Vulkan0', name: 'AMD Radeon RX 7600', totalMib: 8000, freeMib: 7000 }];
     expect(whisperChoices(amd, { model: 'gemma4-e4b-it-qat', device: 'Vulkan0' })).toEqual([cpuOnly]);
+  });
+});
+
+describe('canGiveFeedback', () => {
+  it('only offers feedback on a model that was checked not to invent mistakes', () => {
+    expect(canGiveFeedback('gemma4-e4b-it-qat')).toBe(true);
+    expect(canGiveFeedback('gemma4-e2b-it-qat')).toBe(false);
   });
 });

@@ -45,7 +45,7 @@ try {
   copyFileSync(join(root, 'THIRD_PARTY_NOTICES.txt'), join(work, 'THIRD_PARTY_NOTICES.txt'));
   // Uninstalling takes the downloaded models too, which are gigabytes. An update keeps them.
   writeFileSync(join(work, 'uninstall.nsh'), '!macro customUnInstall\n  ${ifNot} ${isUpdated}\n    RMDir /r "$LOCALAPPDATA\\Conversationer"\n    RMDir /r "$LOCALAPPDATA\\conversationer-updater"\n  ${endIf}\n!macroend\n');
-  writeFileSync(join(work, 'package.json'), JSON.stringify({ name: 'conversationer-build', private: true, version: '0.1.0' }));
+  writeFileSync(join(work, 'package.json'), JSON.stringify({ name: 'conversationer-build', private: true, version: appPackage['version'] }));
   writeFileSync(
     join(work, 'builder.json'),
     JSON.stringify({

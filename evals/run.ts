@@ -9,11 +9,12 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { german, jonas } from '../languages/de/index.ts';
+import { partnerById } from '../languages/partners.ts';
 import { generateTurn, openAiCompatibleChat, personaTurn } from '../packages/engine/src/index.ts';
 import type { CefrLevel, Turn } from '../packages/engine/src/index.ts';
 import { computeMetrics, type Metrics, type RecordedTurn } from './metrics.ts';
 import { learners } from './scenarios/learners.ts';
+import { englishLearners } from './scenarios/learners-en.ts';
 import { scripts } from './scenarios/scripts.ts';
 
 const { values } = parseArgs({
@@ -22,12 +23,17 @@ const { values } = parseArgs({
     levels: { type: 'string', default: 'A1,A2,B1' },
     turns: { type: 'string', default: '50' },
     script: { type: 'string' },
+    partner: { type: 'string', default: 'jonas' },
     base: { type: 'string', default: 'http://localhost:11434' },
     out: { type: 'string', default: `evals/results/${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}` },
   },
 });
 if (!values.models) throw new Error('--models is required');
 const models = values.models.split(',');
+const partner = partnerById(values.partner);
+if (!partner) throw new Error(`Unknown partner ${values.partner}`);
+const { pack, persona } = partner;
+const scriptedLearners = partner.id === 'tom' ? englishLearners : learners;
 const levels = values.levels.split(',') as CefrLevel[];
 const maxTurns = Number(values.turns);
 
@@ -52,7 +58,7 @@ async function unload(base: string, model: string): Promise<void> {
 
 async function playConversation(model: string, level: CefrLevel): Promise<RecordedTurn[]> {
   const chat = openAiCompatibleChat(values.base, model);
-  const lines = values.script ? scripts[values.script] : learners[level];
+  const lines = values.script ? scripts[values.script] : scriptedLearners[level];
   if (!lines) throw new Error(`No lines for ${values.script ?? level}`);
 
   const history: Turn[] = [];
@@ -62,7 +68,7 @@ async function playConversation(model: string, level: CefrLevel): Promise<Record
     const started = performance.now();
     let firstSentenceMs = 0;
     const result = await generateTurn(
-      { history, level, pack: german, persona: jonas, memory: {}, chat },
+      { history, level, pack, persona, memory: {}, chat },
       {
         onSentence: () => {
           firstSentenceMs ||= performance.now() - started;
@@ -78,7 +84,7 @@ async function playConversation(model: string, level: CefrLevel): Promise<Record
 }
 
 function transcript(model: string, level: CefrLevel, turns: RecordedTurn[]): string {
-  const lines = [`# ${model} at ${level}`, ''];
+  const lines = [`# ${persona.name}, ${model} at ${level}`, ''];
   for (const turn of turns) {
     lines.push(`**Learner:** ${turn.user}`, '');
     const notes: string[] = [turn.direction.move, turn.direction.questionStyle];
@@ -134,7 +140,7 @@ for (const model of models) {
 
   for (const level of levels) {
     const turns = await playConversation(model, level);
-    const metrics = computeMetrics(turns, level, german);
+    const metrics = computeMetrics(turns, level, pack);
     rows.push({ model, level, metrics, loaded });
     const stem = `${model.replace(/[^\w.-]+/g, '_')}.${level}`;
     writeFileSync(join(values.out, `${stem}.md`), transcript(model, level, turns));

@@ -197,6 +197,45 @@ Few replies were sampled, and the test's fake microphone interrupts itself, so t
 
 **Orphaned programs:** when the app is killed outright, its helper programs keep running and hold the GPU. The app now records them and stops them on its next start. That path hasn't been tested with a real crash.
 
+## Tom, the English partner (0.2.0)
+
+Tom is a geography teacher from Nottingham, for B2 and C1, using the Pocket TTS voice `paul`. The user chose him by blind listening, rating `paul` 14/15 against nine male voices. `jean` was left out, because its EARS recordings are non-commercial only.
+
+**Conversation** (`npm run eval -- --partner tom --levels B2,C1`), 60 turns per model:
+
+- No closing phrases spoken, and no dodged questions.
+- He asked questions in about 41% of replies.
+- The British English reads naturally ("a proper page-turner", "no bother at all, happens to the best of us").
+
+Weak spots:
+- Some follow-ups are bland tag questions ("It's funny how things go, isn't it?").
+- He once called Hamburg "quite a change from Nottingham", for a learner who isn't from there.
+
+**Probes** (`evals/probe.ts --partner tom`):
+- **E4B:** corrected all 9 false-premise tries (cat, Germany trip, wrong job), and agreed when the premise was true. Challenged on a contradiction, he admitted it 2 times out of 3. The third time he said "you must have misremembered".
+- **E2B:** comparable. When a learner apologised for their English, both models reassured them without lecturing.
+
+**"How could I say that better?"** (`evals/feedback.ts`), with 20 correct sentences and 20 learner mistakes, each 3 times:
+
+| Model | False alarms on correct sentences | Mistakes caught | Right fix |
+|---|---|---|---|
+| E4B | 3/60, all one comma; now ignored in code | 60/60 | 60/60 |
+| E2B | 25/60 | 60/60 | 56/60 |
+
+**Decision:** feedback only appears on E4B or better. For anxious learners, a correct sentence called wrong is the worst outcome. Jonas has no feedback, since German quality hasn't been checked.
+
+**Turn-taking changed at the user's request:** after the partner speaks, nothing is recorded until the learner presses **Start speaking**, and **Hear again** replays the reply. Recording stops at **I'm done**, after a test showed sound afterwards could cancel the reply and repeat the turn.
+
+**Windows tests:**
+- Both partners ran end to end. Tom's voice downloaded on first use.
+- Switching from Jonas to Tom mid-session worked, taking about 9.5 s.
+- Installing 0.2.0 over 0.1.0 kept the downloads and the saved partner, and uninstalling removed everything.
+- First audio was 0.9–1.8 s after the turn ended.
+
+**Untested:** feedback in the app itself (only via the eval), a real microphone with the two-step turn, and Tom on non-NVIDIA machines.
+
+Whisper set to English translates German speech into English rather than transcribing it, as seen when a German test clip reached Tom.
+
 ## Installer
 
 `npm run package` builds `release/Conversationer-Setup-0.1.0.exe` (161 MB, unsigned). Models aren't included: the app chooses and downloads them on first run, after asking, with hash checks and resuming. Models come from Google's and whisper.cpp's public pages, pinned by revision and hash.

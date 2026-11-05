@@ -1,5 +1,5 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
-import { createWriteStream, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { cpus } from 'node:os';
 import { basename, join } from 'node:path';
@@ -123,11 +123,19 @@ class Sidecar {
   }
 }
 
+/** Which voice model and voice speak for a partner. */
+export interface VoiceSpec {
+  ttsLanguage: string;
+  voice: string;
+}
+
 export interface Services {
   llmUrl: string;
   llmChoice: LlmChoice;
   whisperChoice: WhisperChoice;
-  transcribe(wav: ArrayBuffer): Promise<string>;
+  transcribe(wav: ArrayBuffer, language: string): Promise<string>;
+  /** Starts the voice for a partner, restarting the voice program if the language changes. */
+  useVoice(spec: VoiceSpec, options: { ask: boolean }): Promise<void>;
   speak(text: string): Promise<ArrayBuffer>;
   stop(): void;
 }
@@ -152,7 +160,12 @@ export interface ServicePaths {
   bundledSidecars: string;
 }
 
-export async function startServices({ home, bundledSidecars }: ServicePaths, setup: Setup, onProgress: (message: string) => void): Promise<Services> {
+export async function startServices(
+  { home, bundledSidecars }: ServicePaths,
+  setup: Setup,
+  onProgress: (message: string) => void,
+  firstVoice: VoiceSpec,
+): Promise<Services> {
   /** Shipped programs, or one downloaded for this machine. */
   const program = (build: string, name: string) => {
     const shipped = join(bundledSidecars, build);
@@ -170,7 +183,7 @@ export async function startServices({ home, bundledSidecars }: ServicePaths, set
     writeFileSync(record, JSON.stringify(started));
   };
 
-  onProgress('Getting Jonas ready…');
+  onProgress('Getting ready…');
   const llamaServer = program('llama', 'llama-server.exe');
   const listing = spawnSync(llamaServer, ['--list-devices'], { cwd: join(llamaServer, '..'), encoding: 'utf8', windowsHide: true });
   const devices = parseDevices(`${listing.stdout}\n${listing.stderr}`);
@@ -183,12 +196,14 @@ export async function startServices({ home, bundledSidecars }: ServicePaths, set
 
   // Everything this machine should need, asked about once, in one go.
   const firstChoice = choices[0] as LlmChoice;
-  const voiceMissing = !existsSync(join(home, 'hf-cache'));
+  // The voice program fetches each language's model itself on first use, so a marker records success.
+  const voiceMarker = (spec: VoiceSpec) => join(home, 'voices', `${spec.ttsLanguage}.ready`);
+  const voiceMissing = !existsSync(voiceMarker(firstVoice));
   await setup.ensure([...filesForLlm(firstChoice), ...filesForWhisper(whisperChoices(devices, firstChoice)[0] as WhisperChoice)], {
     ask: true,
     extraBytes: voiceMissing ? VOICE_DOWNLOAD_BYTES : 0,
   });
-  onProgress('Getting Jonas ready…');
+  onProgress('Getting ready…');
 
   // Try the best choice the machine might manage, and step down whenever a model won't load.
   let llmUrl = '';
@@ -214,7 +229,7 @@ export async function startServices({ home, bundledSidecars }: ServicePaths, set
   }
   if (!llmChoice) throw new Error('No language model could be loaded.');
 
-  onProgress('Getting Jonas’s ears ready…');
+  onProgress('Getting the listening ready…');
   const whisperPort = await freePort();
   let whisperChoice: WhisperChoice | undefined;
   for (const choice of whisperChoices(devices, llmChoice)) {
@@ -241,29 +256,46 @@ export async function startServices({ home, bundledSidecars }: ServicePaths, set
   }
   if (!whisperChoice) throw new Error('Speech recognition could not be started.');
 
-  onProgress('Getting Jonas’s voice ready… The first time, this takes a few minutes.');
-  const ttsPort = await freePort();
-  const tts = new Sidecar(
-    'tts',
-    program('pocket-tts', 'pocket-tts.exe'),
-    ['serve', '--language', 'german', '--default-voice', 'juergen', '--host', '127.0.0.1', '--port', String(ttsPort)],
-    `http://127.0.0.1:${ttsPort}/health`,
-    logs,
-    { HF_HOME: join(home, 'hf-cache') },
-    remember,
-    VOICE_START_TIMEOUT_MS,
-  );
-  await tts.start();
-  running.push(tts);
+  let tts: Sidecar | undefined;
+  let ttsPort = 0;
+  let ttsLanguage: string | undefined;
+
+  async function useVoice(spec: VoiceSpec, { ask }: { ask: boolean }): Promise<void> {
+    if (tts && ttsLanguage === spec.ttsLanguage) return;
+    if (!existsSync(voiceMarker(spec))) await setup.ensure([], { ask, extraBytes: VOICE_DOWNLOAD_BYTES });
+    tts?.stop();
+    onProgress('Getting the voice ready… The first time, this takes a few minutes.');
+    ttsPort = await freePort();
+    const sidecar = new Sidecar(
+      'tts',
+      program('pocket-tts', 'pocket-tts.exe'),
+      ['serve', '--language', spec.ttsLanguage, '--default-voice', spec.voice, '--host', '127.0.0.1', '--port', String(ttsPort)],
+      `http://127.0.0.1:${ttsPort}/health`,
+      logs,
+      { HF_HOME: join(home, 'hf-cache') },
+      remember,
+      VOICE_START_TIMEOUT_MS,
+    );
+    await sidecar.start();
+    tts = sidecar;
+    ttsLanguage = spec.ttsLanguage;
+    mkdirSync(join(home, 'voices'), { recursive: true });
+    writeFileSync(voiceMarker(spec), '');
+  }
+
+  // Already agreed to as part of the first download.
+  await useVoice(firstVoice, { ask: false });
 
   return {
     llmUrl,
     llmChoice,
     whisperChoice,
-    async transcribe(wav) {
+    useVoice,
+    async transcribe(wav, language) {
       const form = new FormData();
       form.append('file', new Blob([wav], { type: 'audio/wav' }), 'turn.wav');
       form.append('response_format', 'json');
+      form.append('language', language);
       const response = await fetch(`http://127.0.0.1:${whisperPort}/inference`, { method: 'POST', body: form });
       if (!response.ok) throw new Error(`Speech recognition failed with ${response.status}`);
       return ((await response.json()) as { text: string }).text;
@@ -275,6 +307,7 @@ export async function startServices({ home, bundledSidecars }: ServicePaths, set
     },
     stop() {
       for (const sidecar of running) sidecar.stop();
+      tts?.stop();
       rmSync(record, { force: true });
     },
   };

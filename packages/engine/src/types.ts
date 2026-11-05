@@ -1,4 +1,4 @@
-export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2';
+export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1';
 
 export type Move =
   | 'answer'
@@ -97,4 +97,11 @@ export interface LanguagePack {
   moveInstructions: Record<Exclude<Move, 'care' | 'honest_answer'>, string>;
   questionStyleInstructions: Record<QuestionStyle, string>;
   systemPrompt: (args: { persona: Persona; level: LevelRules; levelName: CefrLevel }) => string;
+  /** "How could I say that better?", offered only where it has been checked to work. */
+  feedback?: {
+    system: string;
+    /** The exact reply meaning nothing needs changing. */
+    natural: string;
+    request: (said: string) => string;
+  };
 }

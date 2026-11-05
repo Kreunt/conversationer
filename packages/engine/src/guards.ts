@@ -23,8 +23,10 @@ export interface GuardContext {
 const FORMATTING = /[*_#`~\[\]{}<>|]|^\s*(?:[-•]|\d+[.)])\s|\p{Extended_Pictographic}/u;
 const OPENER_TIC_COUNT = 2;
 
-export function checkSentence(sentence: string, ctx: GuardContext): Violation[] {
+export function checkSentence(spoken: string, ctx: GuardContext): Violation[] {
   const { pack, level, recentOpeners, isFirstSentence } = ctx;
+  // Models write curly apostrophes as often as straight ones, and the patterns expect straight ones.
+  const sentence = spoken.replace(/[’‘]/g, "'");
   const violations: Violation[] = [];
   const rules = pack.levels[level];
 

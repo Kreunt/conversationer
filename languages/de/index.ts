@@ -99,6 +99,14 @@ export const german: LanguagePack = {
         'Dein Gegenüber spricht mittelgut Deutsch (B1). Sprich natürlich über den Alltag, mit normalen Alltagswörtern. ' +
         'Nebensätze sind in Ordnung, aber keine seltenen Wörter.',
     },
+    C1: {
+      maxSentences: 4,
+      maxWordsPerSentence: 28,
+      wordTolerance: 4,
+      longAnswerWords: 50,
+      defaultQuestionStyle: 'open',
+      promptDescription: 'Dein Gegenüber spricht sehr gut Deutsch (C1). Sprich ganz natürlich, mit Meinungen, Humor und Redewendungen.',
+    },
     B2: {
       maxSentences: 4,
       maxWordsPerSentence: 24,

@@ -4,6 +4,8 @@
  *   npm run windows                 start the app to talk to Jonas
  *   npm run windows -- --autotest   play a conversation from a sound file, with no person, and report
  *   npm run windows -- --model 12b  try another language model (12b, qwen9b, or e4b, the default)
+ *   npm run windows -- --autotest --partner tom    test a particular partner
+ *   npm run windows -- --capture-chooser           photograph the partner chooser, as on a first start
  *   npm run windows -- --remove     delete the Windows folder again
  */
 import { execFileSync, spawn } from 'node:child_process';
@@ -19,7 +21,14 @@ const AUTOTEST_TURNS = 2;
 const KEEP_FREE_BYTES = 5e9;
 
 const { values } = parseArgs({
-  options: { autotest: { type: 'boolean', default: false }, remove: { type: 'boolean', default: false }, model: { type: 'string' } },
+  options: {
+    autotest: { type: 'boolean', default: false },
+    remove: { type: 'boolean', default: false },
+    model: { type: 'string' },
+    partner: { type: 'string', default: 'jonas' },
+    'switch-to': { type: 'string' },
+    'capture-chooser': { type: 'boolean', default: false },
+  },
 });
 
 /** Models to compare by hand. Layers are set so Whisper still fits on an 8 GB card beside them. */
@@ -103,17 +112,33 @@ if (values.autotest) {
   rmSync(join(home, 'logs/session.log'), { force: true });
   rmSync(join(home, 'logs/autotest.png'), { force: true });
   const microphone = join(home, 'fake-microphone.wav');
-  const source = join(root, 'evals/results/speech-speed/speech1.wav');
+  // Each partner hears a sentence in their own language, said by the other partner's voice.
+  const source = join(root, values.partner === 'tom' ? 'evals/results/speech-speed/english.wav' : 'evals/results/speech-speed/speech1.wav');
   // The sentence, then a long pause, repeating: a learner taking their time.
   execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', source, '-af', 'apad=pad_dur=5', '-ar', '48000', '-ac', '1', '-c:a', 'pcm_s16le', microphone]);
   env['CONVERSATIONER_FAKE_MIC'] = windowsPath(microphone);
   env['CONVERSATIONER_AUTOTEST'] = String(AUTOTEST_TURNS);
-  forwarded.push('CONVERSATIONER_FAKE_MIC', 'CONVERSATIONER_AUTOTEST');
+  env['CONVERSATIONER_PARTNER'] = values.partner;
+  forwarded.push('CONVERSATIONER_FAKE_MIC', 'CONVERSATIONER_AUTOTEST', 'CONVERSATIONER_PARTNER');
+  if (values['switch-to']) {
+    env['CONVERSATIONER_SWITCH_TO'] = values['switch-to'];
+    forwarded.push('CONVERSATIONER_SWITCH_TO');
+  }
+}
+if (values['capture-chooser']) {
+  rmSync(join(home, 'settings.json'), { force: true });
+  rmSync(join(home, 'logs/capture.png'), { force: true });
+  env['CONVERSATIONER_CAPTURE_AFTER_MS'] = '6000';
+  forwarded.push('CONVERSATIONER_CAPTURE_AFTER_MS');
 }
 env['WSLENV'] = [process.env['WSLENV'], ...forwarded].filter(Boolean).join(':');
 
-const child = spawn(join(home, 'electron/electron.exe'), [], { env, cwd: join(home, 'electron'), stdio: values.autotest ? 'ignore' : 'ignore', detached: !values.autotest });
-if (!values.autotest) {
+const waits = values.autotest || values['capture-chooser'];
+const child = spawn(join(home, 'electron/electron.exe'), [], { env, cwd: join(home, 'electron'), stdio: 'ignore', detached: !waits });
+if (values['capture-chooser']) {
+  await new Promise<void>((resolve) => child.once('exit', () => resolve()));
+  console.log(`Chooser captured: ${windowsPath(join(home, 'logs/capture.png'))}`);
+} else if (!values.autotest) {
   child.unref();
   console.log(`Started. Files are in ${windowsPath(home)}`);
 } else {

@@ -1,5 +1,7 @@
-import { german, jonas } from '../../../../languages/de/index.ts';
+import type { Partner } from '../../../../languages/partners.ts';
+import { canGiveFeedback } from '../../../../packages/model-manager/src/index.ts';
 import {
+  askForFeedback,
   buildMessages,
   chooseDirection,
   cleanTranscript,
@@ -17,15 +19,10 @@ const TICK_MS = 100;
 
 /** Connects the turn logic, the conversation engine and the speech programs for one conversation. */
 export class Session {
-  #turns = new TurnController({
-    mode: 'turn_by_turn',
-    patience: PATIENCE.gentle,
-    soundsUnfinished: german.soundsUnfinished,
-    speculate: 'always',
-  });
+  #turns: TurnController;
   #chat: ChatStream;
   #history: Turn[] = [];
-  #level: CefrLevel = 'A2';
+  #level: CefrLevel;
   #reply: AbortController | undefined;
   #typed: string | undefined;
   #audioWaiter: ((wav: ArrayBuffer) => void) | undefined;
@@ -33,16 +30,39 @@ export class Session {
 
   constructor(
     private readonly services: Services,
+    private readonly partner: Partner,
+    level: CefrLevel,
     private readonly send: (event: ToWindow) => void,
     private readonly log: (entry: Record<string, unknown>) => void,
   ) {
     this.#chat = openAiCompatibleChat(services.llmUrl, 'local');
+    this.#level = level;
+    this.#turns = new TurnController({
+      mode: 'turn_by_turn',
+      patience: PATIENCE.gentle,
+      soundsUnfinished: partner.pack.soundsUnfinished,
+      speculate: 'always',
+    });
+  }
+
+  /** "How could I say that better?" for something the user said, only ever when they ask. */
+  async feedback(id: string, said: string): Promise<void> {
+    if (!this.partner.pack.feedback || !canGiveFeedback(this.services.llmChoice.model)) return;
+    try {
+      const result = await askForFeedback(said, this.partner.pack, this.#chat);
+      this.log({ event: 'feedback', natural: result.natural });
+      this.send({ type: 'feedback', id, ...result });
+    } catch (error) {
+      this.log({ event: 'error', message: String(error) });
+      this.send({ type: 'feedback', id, natural: false, text: 'Sorry, I couldn’t check that just now. Please try again.' });
+    }
   }
 
   /** Run once while loading: the first prompt can take 20 s, and that wait must not land on the first reply. */
   async warmUp(): Promise<void> {
-    const request = { history: [], level: this.#level, pack: german, persona: jonas, memory: {}, chat: this.#chat };
-    const direction = chooseDirection({ history: [], level: this.#level, pack: german, hasCallback: false, hasPersonaEvent: true });
+    const { pack, persona } = this.partner;
+    const request = { history: [], level: this.#level, pack, persona, memory: {}, chat: this.#chat };
+    const direction = chooseDirection({ history: [], level: this.#level, pack, hasCallback: false, hasPersonaEvent: true });
     for await (const _ of this.#chat(buildMessages(request, direction), { temperature: 0, maxTokens: 4 })) {
       // Only the side effect matters.
     }
@@ -152,7 +172,7 @@ export class Session {
     try {
       const typed = this.#typed;
       this.#typed = undefined;
-      const heard = typed ?? cleanTranscript(await this.services.transcribe(await this.#requestAudio()), german.phantomTranscripts);
+      const heard = typed ?? cleanTranscript(await this.services.transcribe(await this.#requestAudio(), this.partner.speech.whisperLanguage), this.partner.pack.phantomTranscripts);
       this.log({ event: 'heard', text: heard, ms: Date.now() - started });
       if (!heard) {
         this.send({ type: 'notice', message: 'I didn’t catch that. Take your time and try again.' });
@@ -161,7 +181,7 @@ export class Session {
         return;
       }
       this.#history.push({ speaker: 'user', text: heard });
-      this.send({ type: 'said', speaker: 'user', text: heard });
+      this.send({ type: 'said', speaker: 'user', text: heard, id: `said-${Date.now()}` });
       await this.#speakReply();
     } catch (error) {
       this.log({ event: 'error', message: String(error) });
@@ -186,7 +206,7 @@ export class Session {
     let first = true;
 
     const result = await generateTurn(
-      { history: this.#history, level: this.#level, pack: german, persona: jonas, memory: {}, chat: this.#chat, signal: abort.signal },
+      { history: this.#history, level: this.#level, pack: this.partner.pack, persona: this.partner.persona, memory: {}, chat: this.#chat, signal: abort.signal },
       {
         onSentence: (sentence) => {
           this.log({ event: 'sentence', text: sentence, ms: Date.now() - started });

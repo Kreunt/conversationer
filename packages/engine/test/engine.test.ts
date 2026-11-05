@@ -86,6 +86,10 @@ describe('guards', () => {
     },
   );
 
+  it('reads curly apostrophes the same as straight ones', () => {
+    expect(check('Wie geht’s dir?')).toEqual([]);
+  });
+
   it('rejects claims to be human', () => {
     expect(check('Ich bin ein echter Mensch.')).toContain('human_claim');
     expect(check('Ich bin keine KI.')).toContain('human_claim');

@@ -9,25 +9,28 @@
 </head>
 <body>
   <header>
-    <div class="who"><strong>Jonas</strong> <span>your AI conversation partner from Leipzig</span></div>
-    <label>My German
-      <select id="level">
-        <option value="A1">Beginner (A1)</option>
-        <option value="A2" selected>Basic (A2)</option>
-        <option value="B1">Intermediate (B1)</option>
-        <option value="B2">Good (B2)</option>
-      </select>
-    </label>
+    <div class="who"><strong id="partner-name">Conversationer</strong> <span id="partner-line"></span></div>
+    <div class="header-actions">
+      <label id="level-label" hidden>My <span id="level-language"></span>
+        <select id="level"></select>
+      </label>
+      <button id="change-partner" class="quiet" hidden>Change partner</button>
+    </div>
   </header>
-  <section id="setup" hidden>
-    <h1>Before you meet Jonas</h1>
+  <section id="choose" class="panel" hidden>
+    <h1>Who would you like to talk to?</h1>
+    <p class="muted">You can switch at any time. Each partner is an AI, not a real person.</p>
+    <div id="partner-list" class="partner-list"></div>
+  </section>
+  <section id="setup" class="panel" hidden>
+    <h1 id="setup-title">Before you start</h1>
     <p id="setup-text"></p>
-    <p class="setup-note">Jonas is an AI, not a real person. He runs entirely on this computer, so your conversations stay here, and after this download he works without the internet.</p>
+    <p id="setup-note" class="muted"></p>
     <progress id="setup-progress" max="1" value="0" hidden></progress>
-    <p id="setup-status" role="status"></p>
-    <p id="setup-detail" class="setup-credit" hidden></p>
-    <button id="setup-accept">Start download</button>
-    <p class="setup-credit">Voice: Kyutai Pocket TTS (CC BY 4.0). Language model: Google Gemma 4 (Apache 2.0).</p>
+    <p id="setup-status" class="muted" role="status"></p>
+    <p id="setup-detail" class="small" hidden></p>
+    <button id="setup-accept" class="primary">Start download</button>
+    <p class="small">Voices: Kyutai Pocket TTS (CC BY 4.0). Language model: Google Gemma 4 (Apache 2.0).</p>
   </section>
   <main id="conversation" aria-live="polite"></main>
   <footer>
@@ -35,9 +38,10 @@
     <div class="turn">
       <div id="ring" class="ring" aria-hidden="true"></div>
       <p id="status">Getting ready…</p>
-      <button id="action" disabled>I’m done</button>
+      <button id="replay" class="quiet" hidden>▶ Hear again</button>
+      <button id="action" class="primary" disabled>Start speaking</button>
     </div>
-    <form id="typing"><input id="text" autocomplete="off" lang="de" placeholder="Or type here…" aria-label="Type your turn"><button type="submit">Send</button></form>
+    <form id="typing"><input id="text" autocomplete="off" placeholder="Or type here…" aria-label="Type your turn"><button type="submit">Send</button></form>
   </footer>
   <script src="renderer.js"></script>
 </body>
